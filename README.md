@@ -7,6 +7,10 @@
 
 **Point of Contact:** yet to decide...
 
+### Reports
+Reports for Tasks 1 and 2 in Google Docs.
+Link: https://docs.google.com/document/d/16IExvQyQPki9rLnz035yEToeajHfd5sK6XYudVQQuAo/edit?usp=sharing
+
 ## Project Description
 ### Task 1:
 Make a VirtualBox with 6 vulnerabilities. 
