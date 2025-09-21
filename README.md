@@ -5,7 +5,7 @@
 - Jake Blackburne (23782618
 - Vincent Ta (23975858)
 
-Point of Contact:
+**Point of Contact:** yet to decide...
 
 ## Project Description
 ### Task 1:
