@@ -63,6 +63,7 @@ You should see the packages from `requirements.txt` listed.
 To run the application:
 
 ```bash
+python database.py
 python app.py
 ```
 
