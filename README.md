@@ -48,8 +48,6 @@ Install all required Python packages from `requirements.txt`:
 pip install -r requirements.txt
 ```
 
-### 3. Verify the Installation
-
 Run the following command to confirm all dependencies are installed correctly:
 
 ```bash
@@ -58,12 +56,18 @@ python -m pip list
 
 You should see the packages from `requirements.txt` listed.
 
+### 3. Set up
+
+```bash
+python database.py
+python setup.py
+```
+
 ### 4. Running the Application
 
 To run the application:
 
 ```bash
-python database.py
 python app.py
 ```
 
@@ -75,17 +79,6 @@ When you are done working on the project, deactivate the virtual environment:
 deactivate
 ```
 
-### 6. Optional: Updating Dependencies
-
-If new packages are installed, update `requirements.txt`:
-
-```bash
-pip freeze > requirements.txt
-```
-
-Commit the updated file so the team can stay in sync.
-
----
 
 
 

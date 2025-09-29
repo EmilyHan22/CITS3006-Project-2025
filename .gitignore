@@ -1,3 +1,6 @@
+# Ignore database
+app.db
+
 # Python cache
 __pycache__/
 *.pyc
