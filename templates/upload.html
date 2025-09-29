@@ -1,0 +1,22 @@
+{% extends "layout.html" %}
+{% block content %}
+<h2>Upload (insecure)</h2>
+
+<form method="post" enctype="multipart/form-data">
+  <input type="file" name="file" />
+  <button type="submit">Upload</button>
+</form>
+
+{% if uploaded_url %}
+  <p>Uploaded: <a href="{{ uploaded_url }}" target="_blank">{{ uploaded_url }}</a></p>
+{% endif %}
+
+<h3>Files</h3>
+<ul>
+  {% for f in files %}
+    <li><a href="{{ url_for('static', filename='uploads/' ~ f) }}" target="_blank">{{ f }}</a></li>
+  {% else %}
+    <li>No files</li>
+  {% endfor %}
+</ul>
+{% endblock %}
