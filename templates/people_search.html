@@ -1,0 +1,29 @@
+{% extends "layout.html" %}
+{% block content %}
+<h2>People Search (insecure)</h2>
+
+<form method="post">
+  <label>Display name contains:</label>
+  <input name="name" />
+  <button type="submit">Search</button>
+</form>
+
+{% if query %}
+  <p><em>Executed query:</em> {{ query }}</p>
+{% endif %}
+
+<table border="1" cellpadding="4" cellspacing="0">
+  <thead><tr><th>ID</th><th>Email</th><th>Display Name</th></tr></thead>
+  <tbody>
+    {% for r in results %}
+      <tr>
+        <td>{{ r.id }}</td>
+        <td>{{ r.email }}</td>
+        <td>{{ r.display_name }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="3">No results</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
