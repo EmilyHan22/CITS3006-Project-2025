@@ -76,6 +76,28 @@
                 <span>Tables</span></a>
         </li>
 
+        <!-- Demo vuln links -->
+        <li class="nav-item {% if request.endpoint == 'announce' %}active{% endif %}">
+            <a class="nav-link" href="{{ url_for('announce') }}">
+                <i class="fas fa-fw fa-bullhorn"></i>
+                <span>Announcements (XSS)</span>
+            </a>
+        </li>
+
+        <li class="nav-item {% if request.endpoint == 'people_search' %}active{% endif %}">
+            <a class="nav-link" href="{{ url_for('people_search') }}">
+                <i class="fas fa-fw fa-search"></i>
+                <span>People Search (SQLi)</span>
+            </a>
+        </li>
+
+        <li class="nav-item {% if request.endpoint == 'upload' %}active{% endif %}">
+            <a class="nav-link" href="{{ url_for('upload') }}">
+                <i class="fas fa-fw fa-upload"></i>
+                <span>Upload (Unrestricted)</span>
+            </a>
+        </li>
+
         <!-- Divider -->
         <hr class="sidebar-divider d-none d-md-block">
 
