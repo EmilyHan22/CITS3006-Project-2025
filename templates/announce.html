@@ -1,30 +1,65 @@
 {% extends "layout.html" %}
 {% block content %}
-<h2>Announcements (stored XSS demo)</h2>
-
-<form method="post">
-  <div>
-    <label>Title</label><br>
-    <input name="title" />
+<div class="container-fluid">
+  <!-- Page Heading -->
+  <div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800">Announcements (stored XSS demo)</h1>
   </div>
-  <div>
-    <label>Body (HTML allowed)</label><br>
-    <textarea name="body" rows="6" cols="60"></textarea>
+
+  <div class="row">
+    <div class="col-lg-8">
+      <div class="card shadow mb-4">
+        <div class="card-header py-3">
+          <h6 class="m-0 font-weight-bold text-primary">Create Announcement</h6>
+        </div>
+        <div class="card-body">
+          <form method="post">
+            <div class="form-group">
+              <label>Title</label>
+              <input class="form-control" name="title" />
+            </div>
+            <div class="form-group">
+              <label>Body (HTML allowed)</label>
+              <textarea name="body" rows="6" class="form-control"></textarea>
+            </div>
+            <button class="btn btn-primary" type="submit">Post Announcement</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="card shadow">
+        <div class="card-header py-3">
+          <h6 class="m-0 font-weight-bold text-secondary">Announcements</h6>
+        </div>
+        <div class="card-body">
+          <ul class="list-unstyled">
+            {% for a in announcements %}
+              <li class="mb-3">
+                <strong>{{ a.title }}</strong>
+                <div class="text-muted small">posted by {{ a.author }}</div>
+                <!-- intentionally unescaped for demo -->
+                <div class="mt-2">{{ a.body | safe }}</div>
+                <hr>
+              </li>
+            {% else %}
+              <li>No announcements</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right column: sample info / tips -->
+    <div class="col-lg-4">
+      <div class="card shadow mb-4">
+        <div class="card-header">
+          <h6 class="m-0 font-weight-bold text-info">Notes</h6>
+        </div>
+        <div class="card-body">
+          <p class="small">This page intentionally renders raw HTML to demonstrate stored XSS. In production, remove <code>|safe</code> and sanitize input.</p>
+        </div>
+      </div>
+    </div>
   </div>
-  <button type="submit">Post Announcement</button>
-</form>
-
-<hr>
-
-<ul>
-  {% for a in announcements %}
-    <li style="margin-bottom:1rem;">
-      <strong>{{ a.title }}</strong> — posted by {{ a.author }}<br>
-      <!-- intentionally unescaped to create stored XSS -->
-      <div>{{ a.body | safe }}</div>
-    </li>
-  {% else %}
-    <li>No announcements</li>
-  {% endfor %}
-</ul>
+</div>
 {% endblock %}
