@@ -8,6 +8,9 @@ import os
 import json
 import codecs
 from datetime import datetime
+import pathlib
+from werkzeug.utils import secure_filename
+from sqlalchemy import text
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -275,6 +278,95 @@ def admin():
         return redirect(url_for('login'))
     return render_template('admin.html', user=get_current_user())
 
+# === START: intentionally insecure demo routes (for lab) ===
+
+# ANNOUNCEMENTS (stored XSS demo)
+ANNOUNCEMENTS = []
+# seed demonstration announcement (stored XSS)
+ANNOUNCEMENTS.append({
+  'id': 1,
+  'title': 'Welcome',
+  'body': '<script>alert("Stored XSS: admin view")</script>',
+  'author': 'seed'
+})
+
+@app.route('/announce', methods=['GET', 'POST'])
+def announce():
+    if not is_logged_in():
+        return redirect(url_for('login'))
+    if request.method == 'POST':
+        title = request.form.get('title', '')
+        body = request.form.get('body', '')
+        ANNOUNCEMENTS.append({
+            'id': len(ANNOUNCEMENTS) + 1,
+            'title': title,
+            'body': body,
+            'author': get_current_user()['email'] if get_current_user() else 'anonymous'
+        })
+        flash('Announcement posted (stored).', 'success')
+        return redirect(url_for('announce'))
+    return render_template('announce.html', user=get_current_user(), announcements=ANNOUNCEMENTS)
+
+
+# PEOPLE SEARCH (SQLi demo)
+@app.route('/people-search', methods=['GET', 'POST'])
+def people_search():
+    if not is_logged_in():
+        return redirect(url_for('login'))
+
+    results = []
+    query_str = ''
+    if request.method == 'POST':
+        name_query = request.form.get('name', '')
+        # INSECURE: string concatenation -> SQL injection
+        query_str = f"SELECT id, email, display_name FROM users WHERE display_name LIKE '%{name_query}%'"
+        try:
+            res = db.session.execute(text(query_str))
+            results = [dict(row) for row in res.mappings()]
+        except Exception as e:
+            flash(f"Query error: {e}", "error")
+
+    return render_template('people_search.html', user=get_current_user(), results=results, query=query_str)
+
+
+# UPLOAD (unrestricted file upload demo)
+basedir = os.path.abspath(os.path.dirname(__file__))
+UPLOAD_FOLDER = os.path.join(basedir, 'static', 'uploads')
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+def allowed_file(filename):
+    # INTENTIONALLY insecure: allow everything
+    return True
+
+@app.route('/upload', methods=['GET', 'POST'])
+def upload():
+    if not is_logged_in():
+        return redirect(url_for('login'))
+    uploaded_url = None
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            flash('No file part', 'error')
+            return redirect(request.url)
+        f = request.files['file']
+        if f.filename == '':
+            flash('No selected file', 'error')
+            return redirect(request.url)
+        if f and allowed_file(f.filename):
+            filename = secure_filename(f.filename)
+            save_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            f.save(save_path)
+            uploaded_url = url_for('static', filename=f'uploads/{filename}')
+            flash('File uploaded (no validation).', 'success')
+            return redirect(url_for('upload'))
+
+    # list uploaded files
+    files = []
+    for p in pathlib.Path(app.config['UPLOAD_FOLDER']).iterdir():
+        if p.is_file():
+            files.append(p.name)
+    return render_template('upload.html', user=get_current_user(), files=files, uploaded_url=uploaded_url)
+# === END insecure demo routes ===
 
 @app.route('/blank')
 def blank():
