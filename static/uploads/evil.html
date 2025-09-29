@@ -1,0 +1,18 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Uploaded demo</title>
+  </head>
+  <body>
+    <h1>Uploaded file</h1>
+    <p>This file demonstrates an insecure upload serving HTML/JS.</p>
+    <script>
+      // Benign proof-of-concept: shows that JS in uploaded HTML runs
+      alert("Uploaded HTML executed — demo only");
+      // You can also write to the page for visible proof:
+      document.body.insertAdjacentHTML('beforeend',
+        '<p><strong>Proof:</strong> JS ran and modified the DOM.</p>');
+    </script>
+  </body>
+</html>
