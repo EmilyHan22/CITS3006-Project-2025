@@ -1,13 +1,14 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from flask_wtf import FlaskForm
-from flask_sqlalchemy import SQLAlchemy
 from wtforms import StringField, PasswordField, BooleanField, SubmitField, EmailField
 from wtforms.validators import DataRequired, Email, EqualTo, Length
 from sqlalchemy import text
+from models import db, User, Client, AreaDataPoint, BarDataPoint, PieSlice
 import os
 import json
-import codecs
 from datetime import datetime
+import subprocess
+
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -18,53 +19,14 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(basedir, "app.db")}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Initialize database
-db = SQLAlchemy(app)
+# Initialize database using the shared instance from models.py
+db.init_app(app)
 
-# ROT13 encryption functions
-def rot13_encrypt(text):
-    """Encrypt text using ROT13"""
-    return codecs.encode(text, 'rot13')
+UPLOAD_FOLDER = os.path.join(basedir, 'uploads')
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-def rot13_decrypt(text):
-    """Decrypt text using ROT13 (ROT13 is symmetric)"""
-    return codecs.encode(text, 'rot13')
-
-# User model
-class User(db.Model):
-    __tablename__ = 'users'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(120), unique=True, nullable=False, index=True)
-    password = db.Column(db.String(255), nullable=False)
-    display_name = db.Column(db.String(100), nullable=False)
-    role = db.Column(db.String(20), nullable=False, default='user')
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    def __init__(self, email, password, display_name, role='user'):
-        self.email = email
-        self.password = rot13_encrypt(password)
-        self.display_name = display_name
-        self.role = role
-    
-    def check_password(self, password):
-        """Check if provided password matches the stored ROT13 encrypted password"""
-        return rot13_decrypt(self.password) == password
-    
-    def to_dict(self):
-        """Convert user object to dictionary for JSON serialization"""
-        return {
-            'id': self.id,
-            'email': self.email,
-            'display_name': self.display_name,
-            'role': self.role,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None
-        }
-    
-    def __repr__(self):
-        return f'<User {self.email}>'
+# User model and helpers are defined in models.py
 
 # Database helper functions
 def get_user_by_email(email):
@@ -133,18 +95,7 @@ SAMPLE_MESSAGES = [
     }
 ]
 
-SAMPLE_TABLE_DATA = [
-    {'id': 1, 'name': 'Tiger Nixon', 'position': 'System Architect', 'office': 'Edinburgh', 'age': 61, 'start_date': '2011/04/25', 'salary': '$320,800'},
-    {'id': 2, 'name': 'Garrett Winters', 'position': 'Accountant', 'office': 'Tokyo', 'age': 63, 'start_date': '2011/07/25', 'salary': '$170,750'},
-    {'id': 3, 'name': 'Ashton Cox', 'position': 'Junior Technical Author', 'office': 'San Francisco', 'age': 66, 'start_date': '2009/01/12', 'salary': '$86,000'},
-    {'id': 4, 'name': 'Cedric Kelly', 'position': 'Senior Javascript Developer', 'office': 'Edinburgh', 'age': 22, 'start_date': '2012/03/29', 'salary': '$433,060'},
-    {'id': 5, 'name': 'Airi Satou', 'position': 'Accountant', 'office': 'Tokyo', 'age': 33, 'start_date': '2008/11/28', 'salary': '$162,700'},
-    {'id': 6, 'name': 'Brielle Williamson', 'position': 'Integration Specialist', 'office': 'New York', 'age': 61, 'start_date': '2012/12/02', 'salary': '$372,000'},
-    {'id': 7, 'name': 'Herrod Chandler', 'position': 'Sales Assistant', 'office': 'San Francisco', 'age': 59, 'start_date': '2012/08/06', 'salary': '$137,500'},
-    {'id': 8, 'name': 'Rhona Davidson', 'position': 'Integration Specialist', 'office': 'Tokyo', 'age': 55, 'start_date': '2010/10/14', 'salary': '$327,900'},
-    {'id': 9, 'name': 'Colleen Hurst', 'position': 'Javascript Developer', 'office': 'San Francisco', 'age': 39, 'start_date': '2009/09/15', 'salary': '$205,500'},
-    {'id': 10, 'name': 'Sonya Frost', 'position': 'Software Engineer', 'office': 'Edinburgh', 'age': 23, 'start_date': '2008/12/13', 'salary': '$103,600'}
-]
+SAMPLE_TABLE_DATA = None
 
 # Forms
 class LoginForm(FlaskForm):
@@ -157,7 +108,7 @@ class RegisterForm(FlaskForm):
     first_name = StringField('First Name', validators=[DataRequired(), Length(min=2, max=20)])
     last_name = StringField('Last Name', validators=[DataRequired(), Length(min=2, max=20)])
     email = EmailField('Email', validators=[DataRequired(), Email()])
-    password = PasswordField('Password', validators=[DataRequired(), Length(min=6)])
+    password = PasswordField('Password', validators=[DataRequired(), Length(min=4)])
     confirm_password = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('password')])
     submit = SubmitField('Register Account')
 
@@ -260,7 +211,8 @@ def dashboard():
 def tables():
     if not is_logged_in():
         return redirect(url_for('login'))
-    return render_template('tables.html', user=get_current_user(), table_data=SAMPLE_TABLE_DATA)
+    clients = Client.query.all()
+    return render_template('tables.html', user=get_current_user(), table_data=clients)
 
 @app.route('/charts')
 def charts():
@@ -303,22 +255,30 @@ def api_messages():
 def api_table_data():
     if not is_logged_in():
         return jsonify({'error': 'Unauthorized'}), 401
-    return jsonify(SAMPLE_TABLE_DATA)
+    rows = [e.to_dict() for e in Client.query.all()]
+    return jsonify(rows)
 
 @app.route('/api/chart-data')
 def api_chart_data():
     if not is_logged_in():
         return jsonify({'error': 'Unauthorized'}), 401
-    
-    # Sample chart data
+
+    area_pairs = [p.to_pair() for p in AreaDataPoint.query.order_by(AreaDataPoint.id.asc()).all()]
+    bar_pairs = [p.to_pair() for p in BarDataPoint.query.order_by(BarDataPoint.id.asc()).all()]
+    pie_pairs = [p.to_pair() for p in PieSlice.query.order_by(PieSlice.id.asc()).all()]
+
     chart_data = {
         'area_chart': {
-            'labels': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-            'data': [0, 10000, 5000, 15000, 10000, 20000, 15000, 25000, 20000, 30000, 25000, 40000]
+            'labels': [l for l, _ in area_pairs],
+            'data': [v for _, v in area_pairs]
+        },
+        'bar_chart': {
+            'labels': [l for l, _ in bar_pairs],
+            'data': [v for _, v in bar_pairs]
         },
         'pie_chart': {
-            'labels': ['Direct', 'Social', 'Referral'],
-            'data': [55, 30, 15]
+            'labels': [l for l, _ in pie_pairs],
+            'data': [v for _, v in pie_pairs]
         }
     }
     return jsonify(chart_data)
@@ -333,16 +293,140 @@ def sql_console():
         return jsonify({'error': 'No query provided'}), 400
 
     try:
-        # Wrap query in text() and use .mappings() to get dict-like rows
         result = db.session.execute(text(query))
-        rows = [dict(row) for row in result.mappings()]  # <- important
+        rows = [dict(row) for row in result.mappings()]
 
         return jsonify({'rows': rows})
     except Exception as e:
-        return jsonify({'error': str(e)}), 40
+        return jsonify({'error': str(e)}), 400
+
+@app.errorhandler(404)
+def handle_404(error):
+    return render_template('404.html'), 404
+
+@app.route('/upload', methods=['GET', 'POST'])
+def upload_file():
+    output = None
+    uploaded_filename = None
+    file_type = None
+    
+    if request.method == 'POST':
+        file = request.files['file']
+        if not file or file.filename == '':
+            flash('No file selected', 'error')
+            return redirect(request.url)
+
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+        file.save(filepath)
+        uploaded_filename = file.filename
+        
+        # Process documents and scripts
+        try:
+            ext = file.filename.lower().split('.')[-1] if '.' in file.filename else ''
+            
+            # Execute Python scripts - VULNERABLE!
+            if ext == 'py':
+                file_type = 'Python Script'
+                result = subprocess.run(
+                    ['python', filepath],
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
+                    cwd=os.path.dirname(filepath)
+                )
+                output = result.stdout if result.stdout else result.stderr
+                flash(f'Script executed successfully.', 'success')
+                
+            # Execute Bash/Batch scripts - VULNERABLE!
+            elif ext in ['bat', 'cmd', 'sh']:
+                file_type = 'Shell Script'
+                if ext == 'sh':
+                    result = subprocess.run(
+                        ['bash', filepath],
+                        capture_output=True,
+                        text=True,
+                        timeout=10
+                    )
+                else:
+                    result = subprocess.run(
+                        [filepath],
+                        capture_output=True,
+                        text=True,
+                        timeout=10,
+                        shell=True
+                    )
+                output = result.stdout if result.stdout else result.stderr
+                flash(f'Script executed successfully.', 'success')
+                
+            # Display text documents
+            elif ext in ['txt', 'md', 'log', 'csv', 'json', 'xml']:
+                file_type = f'{ext.upper()} Document'
+                with open(filepath, 'r', encoding='utf-8') as f:
+                    output = f.read()
+                flash(f'Document loaded successfully.', 'success')
+                    
+            # Display binary documents (PDF, DOCX, etc.) as hex/info
+            elif ext in ['pdf', 'docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt', 'odt', 'rtf']:
+                file_type = f'{ext.upper()} Document'
+                file_size = os.path.getsize(filepath)
+                with open(filepath, 'rb') as f:
+                    preview_bytes = f.read(2048)
+                    hex_preview = ' '.join(f'{b:02x}' for b in preview_bytes[:512])
+                    
+                output = f"Document Type: {ext.upper()}\n"
+                output += f"File Size: {file_size:,} bytes\n"
+                output += f"Location: {filepath}\n\n"
+                output += f"--- Hex Preview (first 512 bytes) ---\n{hex_preview}\n\n"
+                output += f"--- ASCII Preview ---\n"
+                try:
+                    ascii_preview = preview_bytes.decode('utf-8', errors='ignore')
+                    output += ascii_preview
+                except:
+                    output += "Binary content"
+                    
+                flash(f'Document metadata loaded successfully.', 'success')
+            else:
+                file_type = 'Unknown File'
+                flash(f'Unsupported file type.', 'warning')
+                output = f"File '{file.filename}' uploaded but format not recognized.\nSupported: PDF, DOCX, TXT, PY, SH, BAT"
+                        
+        except subprocess.TimeoutExpired:
+            flash('Script execution timed out (10 second limit)', 'warning')
+            output = "Execution timed out after 10 seconds"
+        except Exception as e:
+            flash(f'Error processing file: {e}', 'error')
+            output = f"Error: {str(e)}"
+
+    return render_template('upload.html', user=get_current_user(), output=output, filename=uploaded_filename, file_type=file_type)
+
+@app.route('/search')
+def search():
+    if not is_logged_in():
+        return redirect(url_for('login'))
+
+    # Vulnerable search function for pentesting practice
+    # WARNING: This is intentionally vulnerable to SQL injection!
+    q = request.args.get('q') or request.args.get('query') or ''
+    
+    # Using string concatenation instead of parameterized queries - VULNERABLE!
+    # Simpler structure that's easier to exploit
+    sql_query = f"SELECT name, position, salary FROM clients WHERE name LIKE '%{q}%' ORDER BY name"
+
+    rows = []
+    error = None
+    try:
+        result = db.session.execute(text(sql_query))
+        rows = [dict(r) for r in result.mappings()]
+    except Exception as e:
+        error = str(e)
+
+    return render_template('search.html', user=get_current_user(), query=q, results=rows, error=error)
 
 if __name__ == '__main__':
+    # Ensure tables exist and seed initial data
+    try:
+        from database import init_db
+        init_db(app, reset=False)
+    except Exception as e:
+        print(f"Database init error: {e}")
     app.run(host='0.0.0.0', debug=True)
-
-
-

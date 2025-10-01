@@ -28,20 +28,23 @@ function number_format(number, decimals, dec_point, thousands_sep) {
 }
 
 // Bar Chart Example
-var ctx = document.getElementById("myBarChart");
-var myBarChart = new Chart(ctx, {
-  type: 'bar',
-  data: {
-    labels: ["January", "February", "March", "April", "May", "June"],
-    datasets: [{
-      label: "Revenue",
-      backgroundColor: "#4e73df",
-      hoverBackgroundColor: "#2e59d9",
-      borderColor: "#4e73df",
-      data: [4215, 5312, 6251, 7841, 9821, 14984],
-    }],
-  },
-  options: {
+(function() {
+  var barCtx = document.getElementById("myBarChart");
+
+  function renderBarChart(labels, values) {
+    return new Chart(barCtx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: "Revenue",
+        backgroundColor: "#4e73df",
+        hoverBackgroundColor: "#2e59d9",
+        borderColor: "#4e73df",
+        data: values,
+      }],
+    },
+    options: {
     maintainAspectRatio: false,
     layout: {
       padding: {
@@ -106,6 +109,21 @@ var myBarChart = new Chart(ctx, {
           return datasetLabel + ': $' + number_format(tooltipItem.yLabel);
         }
       }
-    },
+      },
+    }
+    });
   }
-});
+
+  if (barCtx) {
+    fetch('/api/chart-data')
+      .then(resp => resp.json())
+      .then(data => {
+        var labels = (data && data.bar_chart && data.bar_chart.labels) || [];
+        var values = (data && data.bar_chart && data.bar_chart.data) || [];
+        renderBarChart(labels, values);
+      })
+      .catch(err => {
+        renderBarChart(["January","February","March","April","May","June"], [4215, 5312, 6251, 7841, 9821, 14984]);
+      });
+  }
+})();

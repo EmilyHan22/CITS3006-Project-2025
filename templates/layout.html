@@ -57,7 +57,6 @@
                     <div class="collapse-divider"></div>
                     <h6 class="collapse-header">Other Pages:</h6>
                     <a class="collapse-item" href="{{ url_for('error_404') }}">404 Page</a>
-                    <a class="collapse-item" href="{{ url_for('blank') }}">Blank Page</a>
                 </div>
             </div>
         </li>
@@ -74,6 +73,13 @@
             <a class="nav-link" href="{{ url_for('tables') }}">
                 <i class="fas fa-fw fa-table"></i>
                 <span>Tables</span></a>
+        </li>
+
+        <!-- Nav Item - Upload -->
+        <li class="nav-item {% if request.endpoint == 'upload_file' %}active{% endif %}">
+            <a class="nav-link" href="{{ url_for('upload_file') }}">
+                <i class="fas fa-fw fa-file-upload"></i>
+                <span>Upload</span></a>
         </li>
 
         <!-- Divider -->
@@ -102,13 +108,13 @@
                     <i class="fa fa-bars"></i>
                 </button>
 
-                <!-- Topbar Search (acts as SQL console) -->
-                <form id="sql-search-form" class="d-none d-sm-inline-block form-inline mr-auto ml-md-3 my-2 my-md-0 mw-100 navbar-search">
+                <!-- Topbar Search -->
+                <form action="{{ url_for('search') }}" method="GET" class="d-none d-sm-inline-block form-inline mr-auto ml-md-3 my-2 my-md-0 mw-100 navbar-search">
                     <div class="input-group">
-                        <input type="text" id="sql-query" name="query" class="form-control bg-light border-0 small"
-                               placeholder="Search" aria-label="SQL Console" aria-describedby="basic-addon2" autocomplete="off">
+                        <input type="text" name="q" class="form-control bg-light border-0 small"
+                               placeholder="Search clients..." aria-label="Search" aria-describedby="basic-addon2" autocomplete="off">
                         <div class="input-group-append">
-                            <button class="btn btn-primary" type="submit" id="sql-submit">
+                            <button class="btn btn-primary" type="submit">
                                 <i class="fas fa-search fa-sm"></i>
                             </button>
                         </div>
@@ -226,28 +232,7 @@
             <!-- Begin Page Content -->
             <div class="container-fluid">
 
-                <!-- SQL Console Results Panel -->
-                <div id="sql-console-results" class="mb-4" style="display:none;">
-                    <div class="card shadow mb-4">
-                        <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                            <h6 class="m-0 font-weight-bold text-primary">SQL Console Results</h6>
-                            <div>
-                                <button id="sql-clear-results" class="btn btn-sm btn-secondary">Clear</button>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <div id="sql-console-error" style="display:none;">
-                                <div class="alert alert-danger" role="alert"></div>
-                            </div>
-                            <div id="sql-console-table-wrapper" style="overflow:auto; max-height:400px;">
-                                <!-- Table will be injected here -->
-                            </div>
-                            <div id="sql-console-meta" class="small text-muted mt-2" style="display:none;">
-                                <!-- meta info (row count / time) -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                
 
                 {% block page_content %}{% endblock %}
             </div>
@@ -297,151 +282,6 @@
     </div>
 </div>
 
-<!-- SQL Console Script -->
-<script>
-(function() {
-    const form = document.getElementById('sql-search-form');
-    const queryInput = document.getElementById('sql-query');
-    const resultsPanel = document.getElementById('sql-console-results');
-    const tableWrapper = document.getElementById('sql-console-table-wrapper');
-    const errorBox = document.getElementById('sql-console-error');
-    const metaBox = document.getElementById('sql-console-meta');
-    const clearBtn = document.getElementById('sql-clear-results');
-
-    // Helper: create table from rows (array of objects)
-    function renderTable(rows) {
-        tableWrapper.innerHTML = '';
-        metaBox.style.display = 'none';
-        errorBox.style.display = 'none';
-
-        if (!rows || rows.length === 0) {
-            tableWrapper.innerHTML = '<div class="p-3">Query executed successfully. No rows returned.</div>';
-            metaBox.textContent = 'Rows: 0';
-            metaBox.style.display = 'block';
-            return;
-        }
-
-        // determine columns from first row (object keys)
-        const cols = Object.keys(rows[0]);
-
-        const table = document.createElement('table');
-        table.className = 'table table-bordered table-sm mb-0';
-
-        const thead = document.createElement('thead');
-        const headerRow = document.createElement('tr');
-        cols.forEach(col => {
-            const th = document.createElement('th');
-            th.scope = 'col';
-            th.textContent = col;
-            headerRow.appendChild(th);
-        });
-        thead.appendChild(headerRow);
-        table.appendChild(thead);
-
-        const tbody = document.createElement('tbody');
-        rows.forEach(r => {
-            const tr = document.createElement('tr');
-            cols.forEach(col => {
-                const td = document.createElement('td');
-                // show `null` explicitly
-                let cell = r[col];
-                if (cell === null || cell === undefined) {
-                    td.textContent = 'NULL';
-                    td.className = 'text-muted';
-                } else if (typeof cell === 'object') {
-                    // safely stringify objects/arrays
-                    try {
-                        td.textContent = JSON.stringify(cell);
-                    } catch (e) {
-                        td.textContent = String(cell);
-                    }
-                } else {
-                    td.textContent = String(cell);
-                }
-                tr.appendChild(td);
-            });
-            tbody.appendChild(tr);
-        });
-
-        table.appendChild(tbody);
-        tableWrapper.appendChild(table);
-
-        metaBox.textContent = 'Rows: ' + rows.length;
-        metaBox.style.display = 'block';
-    }
-
-    function showError(msg) {
-        errorBox.style.display = '';
-        errorBox.querySelector('.alert').textContent = msg;
-        tableWrapper.innerHTML = '';
-        metaBox.style.display = 'none';
-    }
-
-    clearBtn.addEventListener('click', function() {
-        resultsPanel.style.display = 'none';
-        tableWrapper.innerHTML = '';
-        errorBox.style.display = 'none';
-        metaBox.style.display = 'none';
-        queryInput.value = '';
-    });
-
-    form.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const q = queryInput.value.trim();
-        if (!q) {
-            return;
-        }
-
-        // show results panel
-        resultsPanel.style.display = '';
-
-        // clear previous
-        tableWrapper.innerHTML = '<div class="p-3">Running query...</div>';
-        errorBox.style.display = 'none';
-        metaBox.style.display = 'none';
-
-        try {
-            const payload = new URLSearchParams();
-            payload.append('query', q);
-
-            const resp = await fetch('{{ url_for("sql_console") }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
-                    // If you require CSRF, include X-CSRFToken header here.
-                },
-                body: payload.toString(),
-                credentials: 'same-origin'
-            });
-
-            const data = await resp.json();
-
-            if (!resp.ok) {
-                // HTTP-level error
-                const errMsg = data && data.error ? data.error : (resp.status + ' ' + resp.statusText);
-                showError(errMsg);
-                return;
-            }
-
-            if (data.error) {
-                showError(data.error);
-                return;
-            }
-
-            // Expecting { rows: [ {col: val, ...}, ... ] }
-            renderTable(data.rows || []);
-        } catch (err) {
-            showError(String(err));
-        }
-    });
-
-    // Allow pressing ESC to clear results
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            clearBtn.click();
-        }
-    });
-})();
-</script>
+<!-- No SQL console script; search submits to /search -->
 
 {% endblock %}

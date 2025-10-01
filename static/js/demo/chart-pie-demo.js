@@ -3,19 +3,22 @@ Chart.defaults.global.defaultFontFamily = 'Nunito', '-apple-system,system-ui,Bli
 Chart.defaults.global.defaultFontColor = '#858796';
 
 // Pie Chart Example
-var ctx = document.getElementById("myPieChart");
-var myPieChart = new Chart(ctx, {
-  type: 'doughnut',
-  data: {
-    labels: ["Direct", "Referral", "Social"],
-    datasets: [{
-      data: [55, 30, 15],
-      backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc'],
-      hoverBackgroundColor: ['#2e59d9', '#17a673', '#2c9faf'],
-      hoverBorderColor: "rgba(234, 236, 244, 1)",
-    }],
-  },
-  options: {
+(function() {
+  var pieCtx = document.getElementById("myPieChart");
+
+  function renderPieChart(labels, values) {
+    return new Chart(pieCtx, {
+    type: 'doughnut',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: values,
+        backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc'],
+        hoverBackgroundColor: ['#2e59d9', '#17a673', '#2c9faf'],
+        hoverBorderColor: "rgba(234, 236, 244, 1)",
+      }],
+    },
+    options: {
     maintainAspectRatio: false,
     tooltips: {
       backgroundColor: "rgb(255,255,255)",
@@ -31,5 +34,20 @@ var myPieChart = new Chart(ctx, {
       display: false
     },
     cutoutPercentage: 80,
-  },
-});
+    },
+    });
+  }
+
+  if (pieCtx) {
+    fetch('/api/chart-data')
+      .then(resp => resp.json())
+      .then(data => {
+        var labels = (data && data.pie_chart && data.pie_chart.labels) || [];
+        var values = (data && data.pie_chart && data.pie_chart.data) || [];
+        renderPieChart(labels, values);
+      })
+      .catch(err => {
+        renderPieChart(["Direct", "Referral", "Social"], [55, 30, 15]);
+      });
+  }
+})();

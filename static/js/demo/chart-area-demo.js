@@ -28,28 +28,31 @@ function number_format(number, decimals, dec_point, thousands_sep) {
 }
 
 // Area Chart Example
-var ctx = document.getElementById("myAreaChart");
-var myLineChart = new Chart(ctx, {
-  type: 'line',
-  data: {
-    labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-    datasets: [{
-      label: "Earnings",
-      lineTension: 0.3,
-      backgroundColor: "rgba(78, 115, 223, 0.05)",
-      borderColor: "rgba(78, 115, 223, 1)",
-      pointRadius: 3,
-      pointBackgroundColor: "rgba(78, 115, 223, 1)",
-      pointBorderColor: "rgba(78, 115, 223, 1)",
-      pointHoverRadius: 3,
-      pointHoverBackgroundColor: "rgba(78, 115, 223, 1)",
-      pointHoverBorderColor: "rgba(78, 115, 223, 1)",
-      pointHitRadius: 10,
-      pointBorderWidth: 2,
-      data: [0, 10000, 5000, 15000, 10000, 20000, 15000, 25000, 20000, 30000, 25000, 40000],
-    }],
-  },
-  options: {
+(function() {
+  var areaCtx = document.getElementById("myAreaChart");
+
+  function renderAreaChart(labels, values) {
+    return new Chart(areaCtx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: "Earnings",
+        lineTension: 0.3,
+        backgroundColor: "rgba(78, 115, 223, 0.05)",
+        borderColor: "rgba(78, 115, 223, 1)",
+        pointRadius: 3,
+        pointBackgroundColor: "rgba(78, 115, 223, 1)",
+        pointBorderColor: "rgba(78, 115, 223, 1)",
+        pointHoverRadius: 3,
+        pointHoverBackgroundColor: "rgba(78, 115, 223, 1)",
+        pointHoverBorderColor: "rgba(78, 115, 223, 1)",
+        pointHitRadius: 10,
+        pointBorderWidth: 2,
+        data: values,
+      }],
+    },
+    options: {
     maintainAspectRatio: false,
     layout: {
       padding: {
@@ -114,5 +117,21 @@ var myLineChart = new Chart(ctx, {
         }
       }
     }
+      }
+    });
   }
-});
+
+  if (areaCtx) {
+    fetch('/api/chart-data')
+      .then(resp => resp.json())
+      .then(data => {
+        var labels = (data && data.area_chart && data.area_chart.labels) || [];
+        var values = (data && data.area_chart && data.area_chart.data) || [];
+        renderAreaChart(labels, values);
+      })
+      .catch(err => {
+        // fallback
+        renderAreaChart(["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"], [0, 10000, 5000, 15000, 10000, 20000, 15000, 25000, 20000, 30000, 25000, 40000]);
+      });
+  }
+})();
