@@ -48,3 +48,61 @@ class User(db.Model):
         return f'<User {self.email}>'
 
 
+class Client(db.Model):
+    __tablename__ = 'clients'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), nullable=False)
+    position = db.Column(db.String(120), nullable=False)
+    office = db.Column(db.String(120), nullable=False)
+    age = db.Column(db.Integer, nullable=False)
+    start_date = db.Column(db.String(20), nullable=False)
+    salary = db.Column(db.String(50), nullable=False)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'position': self.position,
+            'office': self.office,
+            'age': self.age,
+            'start_date': self.start_date,
+            'salary': self.salary,
+        }
+
+
+class AreaDataPoint(db.Model):
+    __tablename__ = 'area_data_points'
+
+    id = db.Column(db.Integer, primary_key=True)
+    label = db.Column(db.String(20), nullable=False)  # e.g., month abbrev
+    value = db.Column(db.Integer, nullable=False)
+
+    def to_pair(self):
+        return self.label, self.value
+
+
+class BarDataPoint(db.Model):
+    __tablename__ = 'bar_data_points'
+
+    id = db.Column(db.Integer, primary_key=True)
+    label = db.Column(db.String(20), nullable=False)  # e.g., full month
+    value = db.Column(db.Integer, nullable=False)
+
+    def to_pair(self):
+        return self.label, self.value
+
+
+class PieSlice(db.Model):
+    __tablename__ = 'pie_slices'
+
+    id = db.Column(db.Integer, primary_key=True)
+    label = db.Column(db.String(50), nullable=False)
+    value = db.Column(db.Integer, nullable=False)
+
+    def to_pair(self):
+        return self.label, self.value
+
+
+
+
