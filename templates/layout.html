@@ -57,7 +57,6 @@
                     <div class="collapse-divider"></div>
                     <h6 class="collapse-header">Other Pages:</h6>
                     <a class="collapse-item" href="{{ url_for('error_404') }}">404 Page</a>
-                    <a class="collapse-item" href="{{ url_for('blank') }}">Blank Page</a>
                 </div>
             </div>
         </li>
@@ -80,21 +79,14 @@
         <li class="nav-item {% if request.endpoint == 'announce' %}active{% endif %}">
             <a class="nav-link" href="{{ url_for('announce') }}">
                 <i class="fas fa-fw fa-bullhorn"></i>
-                <span>Announcements (XSS)</span>
-            </a>
-        </li>
-
-        <li class="nav-item {% if request.endpoint == 'people_search' %}active{% endif %}">
-            <a class="nav-link" href="{{ url_for('people_search') }}">
-                <i class="fas fa-fw fa-search"></i>
-                <span>People Search (SQLi)</span>
+                <span>Announcements</span>
             </a>
         </li>
 
         <li class="nav-item {% if request.endpoint == 'upload' %}active{% endif %}">
             <a class="nav-link" href="{{ url_for('upload') }}">
                 <i class="fas fa-fw fa-upload"></i>
-                <span>Upload (Unrestricted)</span>
+                <span>Upload</span>
             </a>
         </li>
 

@@ -286,7 +286,7 @@ ANNOUNCEMENTS = []
 ANNOUNCEMENTS.append({
   'id': 1,
   'title': 'Welcome',
-  'body': '<script>alert("Stored XSS: admin view")</script>',
+  'body': 'Welcome to the announcements demo. Post an announcement to test stored XSS.',
   'author': 'seed'
 })
 
@@ -306,28 +306,6 @@ def announce():
         flash('Announcement posted (stored).', 'success')
         return redirect(url_for('announce'))
     return render_template('announce.html', user=get_current_user(), announcements=ANNOUNCEMENTS)
-
-
-# PEOPLE SEARCH (SQLi demo)
-@app.route('/people-search', methods=['GET', 'POST'])
-def people_search():
-    if not is_logged_in():
-        return redirect(url_for('login'))
-
-    results = []
-    query_str = ''
-    if request.method == 'POST':
-        name_query = request.form.get('name', '')
-        # INSECURE: string concatenation -> SQL injection
-        query_str = f"SELECT id, email, display_name FROM users WHERE display_name LIKE '%{name_query}%'"
-        try:
-            res = db.session.execute(text(query_str))
-            results = [dict(row) for row in res.mappings()]
-        except Exception as e:
-            flash(f"Query error: {e}", "error")
-
-    return render_template('people_search.html', user=get_current_user(), results=results, query=query_str)
-
 
 # UPLOAD (unrestricted file upload demo)
 basedir = os.path.abspath(os.path.dirname(__file__))

