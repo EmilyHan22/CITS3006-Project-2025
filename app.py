@@ -430,12 +430,15 @@ def search():
     if not is_logged_in():
         return redirect(url_for('login'))
 
-    # Vulnerable search function for pentesting practice
-    # WARNING: This is intentionally vulnerable to SQL injection!
+    # Intentionally vulnerable to SQL Injection
     q = request.args.get('q') or request.args.get('query') or ''
     
-    # Using string concatenation instead of parameterized queries - VULNERABLE!
-    # Simpler structure that's easier to exploit
+    # Blocking ONLY the basic ' OR '1'='1 attack
+    if q.strip().lower() == "' or '1'='1":
+        # Return empty results for this specific payload
+        return render_template('search.html', user=get_current_user(), query=q, results=[], error=None)
+    
+    # Using string concatenation instead of parameterized queries 
     sql_query = f"SELECT name, position, salary FROM clients WHERE name LIKE '%{q}%' ORDER BY name"
 
     rows = []
