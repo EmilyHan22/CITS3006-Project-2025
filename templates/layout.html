@@ -75,6 +75,14 @@
                 <span>Tables</span></a>
         </li>
 
+        <!-- Nav Item - Announcements -->
+        <li class="nav-item {% if request.endpoint == 'announce' %}active{% endif %}">
+            <a class="nav-link" href="{{ url_for('announce') }}">
+                <i class="fas fa-fw fa-bullhorn"></i>
+                <span>Announcements</span>
+            </a>
+        </li>        
+
         <!-- Nav Item - Upload -->
         <li class="nav-item {% if request.endpoint == 'upload_file' %}active{% endif %}">
             <a class="nav-link" href="{{ url_for('upload_file') }}">
