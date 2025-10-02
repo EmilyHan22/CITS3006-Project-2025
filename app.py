@@ -227,6 +227,32 @@ def admin():
         return redirect(url_for('login'))
     return render_template('admin.html', user=get_current_user())
 
+# ANNOUNCEMENTS (stored XSS demo)
+ANNOUNCEMENTS = []
+# seed demonstration announcement (stored XSS)
+ANNOUNCEMENTS.append({
+  'id': 1,
+  'title': 'Welcome',
+  'body': 'Welcome to the announcements demo. Post an announcement to test stored XSS.',
+  'author': 'seed'
+})
+
+@app.route('/announce', methods=['GET', 'POST'])
+def announce():
+    if not is_logged_in():
+        return redirect(url_for('login'))
+    if request.method == 'POST':
+        title = request.form.get('title', '')
+        body = request.form.get('body', '')
+        ANNOUNCEMENTS.append({
+            'id': len(ANNOUNCEMENTS) + 1,
+            'title': title,
+            'body': body,
+            'author': get_current_user()['email'] if get_current_user() else 'anonymous'
+        })
+        flash('Announcement posted (stored).', 'success')
+        return redirect(url_for('announce'))
+    return render_template('announce.html', user=get_current_user(), announcements=ANNOUNCEMENTS)
 
 @app.route('/blank')
 def blank():
