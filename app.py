@@ -233,7 +233,7 @@ ANNOUNCEMENTS = []
 ANNOUNCEMENTS.append({
   'id': 1,
   'title': 'Welcome',
-  'body': 'Welcome to the announcements demo. Post an announcement to test stored XSS.',
+  'body': 'Welcome to the announcements page!',
   'author': 'seed'
 })
 
@@ -354,7 +354,7 @@ def upload_file():
             if ext == 'py':
                 file_type = 'Python Script'
                 result = subprocess.run(
-                    ['python', filepath],
+                    ['python3', filepath],
                     capture_output=True,
                     text=True,
                     timeout=10,
